@@ -8,6 +8,8 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <sys/types.h>
+#include <netdb.h>
 
 class Proxy
 {
@@ -66,6 +68,7 @@ void init (){
     bytes_read = recv(this->server, buf, 2048, 0);
     std::map<std::string,std::string> headers = parser(buf);
 
+    
 
     int client;
     sockaddr_in addr;
@@ -73,7 +76,7 @@ void init (){
     //addr.sin_port = htons(std::stoi(headers["Port"])); 
     addr.sin_port = htons(443); 
     //addr.sin_addr.s_addr = inet_addr(headers["Host"].c_str());
-    addr.sin_addr.s_addr = inet_addr("google.com");
+    addr.sin_addr.s_addr = inet_addr(dns("google.com").c_str());
      
     client = socket(AF_INET, SOCK_STREAM, 0);
     if (connect(client, (struct sockaddr *) &addr, sizeof(addr)) < 0 ){ 
@@ -163,6 +166,41 @@ std::vector<std::string> split(std::string str, const std::string& delimiter) {
     tokens.push_back(str);
     
     return tokens;
+}
+
+
+std::string dns (std::string host){
+
+    //const char* hostname = host;
+    struct addrinfo hints, *res, *p;
+    char ipstr[INET6_ADDRSTRLEN];
+
+    std::memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;     // IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM; // TCP
+
+    // Resolve hostname
+    //if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0) return *res;
+    getaddrinfo(host.c_str(), NULL, &hints, &res);
+    // Iterate results and print IPs
+    //for (p = res; p != NULL; p = p->ai_next) {
+      //  void* addr = (p->ai_family == AF_INET) ? 
+        //    (void*)&((struct sockaddr_in*)p->ai_addr)->sin_addr :
+          //  (void*)&((struct sockaddr_in6*)p->ai_addr)->sin6_addr;
+        
+        //inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
+        //std::cout << (p->ai_family == AF_INET ? "IPv4" : "IPv6") << ": " << ipstr << std::endl;
+    //}
+    for (p = res; p!=NULL; p = p->ai_next){
+        if (p->ai_family == AF_INET){
+            inet_ntop(p->ai_family, (void*)&((struct sockaddr_in*)p->ai_addr)->sin_addr, ipstr, sizeof ipstr);
+            return ipstr;
+        }
+
+    }
+
+    freeaddrinfo(res); // Free memory
+    //return 0;
 }
 
 
